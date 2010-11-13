@@ -1,0 +1,14 @@
+ruote-mongodb is a storage provider for the Ruote workflow engine: http://ruote.rubyforge.org/  It enables Ruote to store its data in MongoDB.
+
+INSTALLATION:
+If you're using bundler, you can include this in your Gemfile as follows:
+gem 'ruote-mongodb', :git=>"git://github.com/PlasticLizard/ruote-mongodb.git"
+
+USAGE:
+You can initialize Ruote::MongoDbStorage and pass it directly into the constructor for a Ruote::Worker just like any other Ruote storage provider.
+You can pass in connection information on the constructor as follows:
+Ruote::MongoDbStorage.new(:connection=>{"host"=>"localhost", "port"=>27017, "database"=>"Ruote", "username"=>"pat", "password"=>"s3cret"})
+If you're using this provider from within a Rails app, the provider will attempt to use the connection information specified in config/database.yml, but any settings you pass to the constructor (as in the above) will over-ride the settings from the YAML file.
+By default (if you don't pass anything in on the constructor and you're not using Rails), the provider will attempt to connect to host=localhost, port=27017, database=Ruote (unauthenticated)
+
+*** USE AT YOUR OWN RISK!  There is no warrany of any kind for this software. The author accepts no responsibility for data loss or any ohter harm that may come from using this software.  In particular, you should be aware that Ruote will call this storage provider's purge! method, which is designed to remove any collections from the database it's using which begin with the string stored in the @@collection_prefix class variable ("ruote_" by default).  If that sounds like it could be harmful, consider changing the prefix and/or configuring this provider to use its own database.

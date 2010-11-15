@@ -10,6 +10,10 @@ describe Ruote::MongoDbStorage do
     @repo.purge!
   end
 
+  after :each do
+    @repo.close_connection
+  end
+
   it "can store and retrieve a document by ID" do
     key = BSON::ObjectId.new.to_s
     doc = {"_id" => key, "name" => "ralph", "type" => "test"}

@@ -33,6 +33,10 @@ module Ruote
       end
     end
 
+    def close_connection()
+      @db.connection.close()
+    end
+
     def put(doc, opts={})
       synchronize do
         raise "doc must have a type" unless doc['type']

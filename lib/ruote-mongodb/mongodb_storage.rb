@@ -12,15 +12,18 @@ module Ruote
     def initialize(options={})
       super()
       db_config = {"host"=>"localhost", "port"=>27017, "database"=>"Ruote"}
-      if defined? Rails
+      options = options.dup
+      if environment = options.delete(:environment)
         all_db_config=
-          File.open(File.join(Rails.root,'config/database.yml'),'r') do |f|
+          File.open('config/database.yml','r') do |f|
             YAML.load(f)
           end
-        db_config.merge!(all_db_config[Rails.env]) if all_db_config
-        #args take precedent over config
-        db_config.merge! options.delete(:connection) if options[:connection]
+
+        raise "no configuration for environment: #{environment}" unless env_config = all_db_config[environment]
+        db_config.merge!(env_config)
       end
+      #args take precedent over config
+      db_config.merge! options.delete(:connection) if options[:connection]
 
       @db = Mongo::Connection.new(db_config['host'], db_config['port'], 
         :safe=>true).db(db_config['database'])

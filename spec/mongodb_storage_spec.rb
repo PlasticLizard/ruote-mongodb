@@ -1,7 +1,4 @@
-#require "spec_helper"
-require 'rubygems'
-require 'mongo'
-require 'lib/mongodb_storage'
+require 'ruote-mongodb'
 require 'date'
 
 describe Ruote::MongoDbStorage do

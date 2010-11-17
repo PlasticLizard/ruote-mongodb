@@ -10,7 +10,6 @@ Gem::Specification.new do |s|
   s.files = Dir.glob("{lib,test,spec}/**/*") + %w[LICENSE README]
 
   s.add_dependency 'mongo'
-  s.add_dependency 'yaml'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'test-unit'

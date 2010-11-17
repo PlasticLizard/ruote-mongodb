@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'test/unit'
 require 'mongo'
-require 'lib/mongodb_storage.rb'
+require 'lib/ruote-mongodb'
 
 #
 # note : using the 'errors' type, but this test is about generic storage, not

@@ -15,7 +15,7 @@ module Ruote
       options = options.dup
       if environment = options.delete(:environment)
         all_db_config=
-          File.open('config/database.yml','r') do |f|
+          File.open(options.delete(:config) || 'config/database.yml','r') do |f|
             YAML.load(f)
           end
 

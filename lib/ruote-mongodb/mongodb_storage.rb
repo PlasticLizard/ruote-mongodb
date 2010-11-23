@@ -25,8 +25,8 @@ module Ruote
       #args take precedent over config
       db_config.merge! options.delete(:connection) if options[:connection]
 
-      @db = Mongo::Connection.new(db_config['host'], db_config['port'], 
-        :safe=>true).db(db_config['database'])
+      @db = Mongo::Connection.new(db_config['host'], db_config['port']).
+	db(db_config['database'])
       if db_config['username'] && db_config['password']
         @db.authenticate(db_config['username'], db_config['password'])
       end

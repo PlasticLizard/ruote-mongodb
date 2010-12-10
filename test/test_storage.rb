@@ -204,14 +204,17 @@ class UtStorage < Test::Unit::TestCase
     assert_equal 10, @s.get_many('errors', nil, :limit => 10).size
   end
 
-  def test_get_many_options
-
+  def load_30_errors
     30.times do |i|
       @s.put(
         '_id' => sprintf("yy!%0.2d", i),
         'type' => 'errors',
         'msg' => "whatever #{i}")
     end
+  end
+
+  def test_get_many_options
+    load_30_errors
 
     # limit
 
@@ -246,6 +249,16 @@ class UtStorage < Test::Unit::TestCase
       @s.get_many(
         'errors', nil, :skip => 0, :limit => 3, :descending => true
       ).collect { |d| d['_id'] })
+  end
+
+#  def test_dump
+#    load_30_errors
+#    assert @s.dump('errors').length > 0
+#  end
+
+  def test_ids
+    load_30_errors
+    assert_equal 31, @s.ids('errors').length
   end
 end
 

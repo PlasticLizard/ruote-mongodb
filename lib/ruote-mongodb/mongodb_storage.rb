@@ -216,16 +216,19 @@ module Ruote
 
     # encodes unsupported data ($, Date) for storage in MongoDB
     def from_mongo(doc)
-      mongo_encode(doc, /^#{@@encoded_dollar_sign}/, "$", :backward)
+      doc
+      #mongo_encode(doc, /^#{@@encoded_dollar_sign}/, "$", :backward)
     end
 
     # unencodes unsupported values ($, Date) from storage in MongoDB
     def to_mongo(doc)
-      mongo_encode(doc, /^\$/, @@encoded_dollar_sign, :forward).merge!('put_at' => Ruote.now_to_utc_s)
+      doc
+      #mongo_encode(doc, /^\$/, @@encoded_dollar_sign, :forward).merge!('put_at' => Ruote.now_to_utc_s)
     end
 
     # called by from_mongo and to_mongo
     def mongo_encode(doc, pattern, replacement, date_conv)
+      doc
       if doc.is_a? Hash
         doc.keys.each do |key|
           new_key = key

@@ -143,7 +143,7 @@ describe Ruote::MongoDbStorage do
       db.drop_collection("something_else")
       @repo.put({"_id" => BSON::ObjectId.new.to_s, "name" => "ralph", "type" => "test"})
       @repo.put({"_id" => BSON::ObjectId.new.to_s, "name" => "bill", "type" => "test2"})
-      db.collection_names.should == ["system.indexes", "ruote_test", "ruote_test2"]
+      db.collection_names.should == ["system.indexes", "ruote_locks", "ruote_test", "ruote_test2"]
       db["something_else"].insert({"name" => "doug"})
       @repo.purge!
       db.collection_names.should == ["system.indexes", "something_else"]

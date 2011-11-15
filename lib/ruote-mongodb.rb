@@ -4,3 +4,4 @@ require 'rubygems'
 require 'mongo'
 require 'yaml'
 require File.join(root,'lib','ruote-mongodb','mongodb_storage')
+require File.join(root,'lib','ruote-mongodb','ordered_hash')

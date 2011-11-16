@@ -1,5 +1,4 @@
 require 'ruote'
-require 'date'
 
 module Ruote
   class MongoDbStorage
@@ -41,13 +40,29 @@ module Ruote
     def get_schedules(delta, now)
       nowstr = Ruote.time_to_utc_s(now)
       schedules = get_collection("schedules").find("at" => {"$lte" => nowstr}).to_a
-      schedules.each { |s| from_mongo s}
+      schedules = schedules.map { |s| from_mongo s}
       filter_schedules(schedules, now)
+    end
+
+    def put_schedule(flavor, owner_fei, s, msg)
+
+      doc = prepare_schedule_doc(flavor, owner_fei, s, msg)
+
+      return nil unless doc
+
+      r = put(doc, :with => {:at => doc["at"]})
+
+      raise "put_schedule failed" if r != nil
+
+      doc['_id']
+
     end
   
     def put(doc, opts={})
       
       force = (opts.delete(:lock) == false) || opts.delete(:force)
+      with = opts.delete(:with) || {}
+
       key = key_for(doc)
       rev = doc['_rev']
       type = doc['type']
@@ -63,19 +78,10 @@ module Ruote
         elsif rev && current_rev.nil?
           true
         else
-          doc = if opts[:update_rev]
-                  doc['_rev'] = current_rev || -1
-                  doc
-                else
-                  doc.merge('_rev' => doc['_rev'] || -1)
-                end
-
-          doc['put_at'] = Ruote.now_to_utc_s
-          doc['_rev'] = doc['_rev'] + 1
-
-          encoded_doc = Rufus::Json.dup(doc)
-          to_mongo encoded_doc
-          get_collection(type).save(encoded_doc)
+          nrev = (rev.to_i + 1).to_s
+          encoded = to_mongo(doc.merge('_rev' => nrev), with)
+          get_collection(type).save(encoded)
+          doc['_rev'] = nrev if opts[:update_rev]
           nil
         end
       end
@@ -85,7 +91,6 @@ module Ruote
     def get(type, key)
       doc = get_collection(type).find_one("_id" => key)
       from_mongo doc if doc
-      doc
     end
 
 
@@ -96,7 +101,7 @@ module Ruote
       type = doc['type']
       key = key_for(doc)
 
-      raise ArgumentError.new("can't delete doc without _rev") unless rev
+      raise ArgumentError.new("can't delete doc without _rev: #{doc.inspect}") unless rev
 
       lock(key, force) do
         current_doc = get(type, key)
@@ -130,10 +135,9 @@ module Ruote
         criteria = {"_id" => /#{id_criteria.join "|"}/}
       end
       docs = get_collection(type).find(criteria, find_opts).to_a
-      docs.each do |doc|
+      docs.map do |doc|
         from_mongo doc
       end
-      docs
     end
 
     def ids(type)
@@ -214,52 +218,16 @@ module Ruote
       @db[@@collection_prefix + type]
     end
 
-    # encodes unsupported data ($, Date) for storage in MongoDB
     def from_mongo(doc)
+      s = doc['document']
+      doc = s ? Rufus::Json.decode(s) : nil
       doc
-      #mongo_encode(doc, /^#{@@encoded_dollar_sign}/, "$", :backward)
     end
 
-    # unencodes unsupported values ($, Date) from storage in MongoDB
-    def to_mongo(doc)
-      doc
-      #mongo_encode(doc, /^\$/, @@encoded_dollar_sign, :forward).merge!('put_at' => Ruote.now_to_utc_s)
+    def to_mongo(doc, with = {})
+      {"_id" => doc["_id"], "document" => Rufus::Json.encode(doc.merge('put_at' => Ruote.now_to_utc_s))}.merge!(with)
     end
-
-    # called by from_mongo and to_mongo
-    def mongo_encode(doc, pattern, replacement, date_conv)
-      doc
-      if doc.is_a? Hash
-        doc.keys.each do |key|
-          new_key = key
-          value = doc[key]
-          if key.is_a?(String) && key =~ pattern
-            new_key = key.sub(pattern, replacement)
-            doc[new_key] = value
-            doc.delete key
-          end
-          mongo_encode(value, pattern, replacement, date_conv)
-          ensure_date_encoding(value, doc, new_key, date_conv)
-          doc[new_key] = value.to_s if value.is_a? Symbol
-        end
-        doc
-      elsif doc.is_a? Array
-        doc.each_with_index do |entry, i|
-          mongo_encode(entry, pattern, replacement, date_conv)
-          ensure_date_encoding(entry, doc, i, date_conv)
-          doc[i] = entry.to_s if entry.is_a? Symbol
-        end
-      end
-    end
-
-    def ensure_date_encoding(value, doc, key, date_conv)
-      if value.is_a?(Date) && date_conv == :forward
-        doc[key] = "DT_" + value.to_s
-      end
-      if value.is_a?(String) && value[0,3] == "DT_" && date_conv == :backward
-        doc[key] = Date.parse(value[3..-1])
-      end
-    end
+  
     
     #this method is in the ruote master but not the released gem
     def replace_engine_configuration(opts)

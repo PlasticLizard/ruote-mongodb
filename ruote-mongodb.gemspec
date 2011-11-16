@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'bson', '~> 1.4.0'
   s.add_dependency 'bson_ext', '~> 1.4.0'
   s.add_dependency 'ruote'
+  s.add_dependency 'yajl-ruby'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'test-unit'

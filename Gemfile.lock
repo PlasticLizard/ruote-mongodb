@@ -6,6 +6,7 @@ PATH
       bson_ext (~> 1.4.0)
       mongo (~> 1.4.0)
       ruote
+      yajl-ruby
 
 GEM
   remote: http://rubygems.org/

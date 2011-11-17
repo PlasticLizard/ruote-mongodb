@@ -17,7 +17,7 @@ module Ruote
             YAML.load(f)
           end
 
-        raise "no configuration for environment: #{environment}" unless env_config = all_db_config[environment]
+        raise "no configuration for environment: #{environment}" unless env_config = all_db_config[environment.to_s]
         db_config.merge!(env_config)
       end
       #args take precedent over config
@@ -57,7 +57,8 @@ module Ruote
       doc['_id']
 
     end
-  
+
+      
     def put(doc, opts={})
       
       force = (opts.delete(:lock) == false) || opts.delete(:force)

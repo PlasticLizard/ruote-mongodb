@@ -61,9 +61,15 @@ module Ruote
           true
         else
           nrev = (rev.to_i + 1).to_s
-          encoded = to_mongo(doc.merge('_rev' => nrev), with)
-          collection.save(encoded)
-          doc['_rev'] = nrev if opts[:update_rev]
+          old_rev = doc["_rev"]
+          encoded = to_mongo(doc.merge!('_rev' => nrev), with)
+          begin
+            collection.save(encoded)
+          rescue Exception => ex
+            puts encoded.inspect
+            raise
+          end
+          doc['_rev'] = old_rev unless opts[:update_rev]
           nil
         end
       end
@@ -79,13 +85,14 @@ module Ruote
 
     def delete(doc, opts = {})
 
+      raise ArgumentError.new("can't delete doc without _rev: #{doc.inspect}") unless doc["_rev"]
+
       force = (opts.delete(:lock) == false) || opts.delete(:force)
       rev = doc['_rev']
       type = doc['type']
       key = key_for(doc)
       collection = get_collection(type)
 
-      raise ArgumentError.new("can't delete doc without _rev: #{doc.inspect}") unless rev
 
       lock(key, force) do
         current_doc = get(type, key, collection)
@@ -209,7 +216,8 @@ module Ruote
     def wait_for_lock(key, block, collection = nil)
       loop do 
         sleep 0.01
-      end until try_lock(key, collection)
+        break if try_lock(key, collection)
+      end 
       lock(key, true, &block)
     end
 
@@ -218,13 +226,45 @@ module Ruote
     end
 
     def from_mongo(doc)
-      s = doc['document']
-      doc = s ? Rufus::Json.decode(s) : nil
       doc
     end
 
     def to_mongo(doc, with = {})
-      {"_id" => doc["_id"], "document" => Rufus::Json.encode(doc.merge('put_at' => Ruote.now_to_utc_s))}.merge!(with)
+      prep_for_save(doc) if ["msgs","configurations"].include? doc["type"]
+        #ruote functional tests suggest that messages will occasionally have 
+        #an unserialized FlowExpressionId if they are representing an error.
+        #Since we are no longer converting documents to JSON, this will cause
+        #mongo db to reject the document, so we convert it. configurations need classes
+        #converted to strings
+      doc.merge(with).merge!("put_at" => Ruote.now_to_utc_s)
+    end
+
+    def prep_for_save(doc)
+      if doc.is_a?(Hash)
+        doc.keys.each do |key|
+          val = doc[key]
+          if key.nil?
+            #this exists purely to survive ruotes functional tests
+            #where errors are deliberately introduced. 
+            doc.delete(key)
+            doc[""] = val
+          elsif val.respond_to?(:to_storage_id)
+            doc[key] = val.to_storage_id
+          elsif val.kind_of?(Class)
+            doc[key] = val.name
+          else
+            prep_for_save(val)
+          end
+        end
+      elsif doc.kind_of?(Array)
+        doc.each_with_index do |child, idx|
+          if child.kind_of?(Class)
+            doc[idx] = child.name
+          else
+            prep_for_save(child)
+          end
+        end
+      end
     end
   
     
@@ -246,3 +286,5 @@ module Ruote
 
   end
 end
+
+require "ruote-mongodb/legacy"

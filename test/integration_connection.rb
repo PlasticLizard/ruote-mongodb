@@ -4,6 +4,7 @@
 
 require 'yajl'
 require 'rufus-json'
+require "ruote-mongodb/mongo"
 Rufus::Json.detect_backend
 dir = File.expand_path(File.dirname(__FILE__))
 
@@ -20,6 +21,6 @@ end
 
 def new_storage(opts = {})
 
-  Ruote::MongoDbStorage.new(opts)
+  Ruote::MongoDbStorage.new(Ruote::Mongo.connect, opts)
 
 end

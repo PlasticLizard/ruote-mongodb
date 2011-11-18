@@ -46,10 +46,10 @@ describe Ruote::MongoDbStorage do
 
     it "can store documents with dates" do
       key = BSON::ObjectId.new.to_s
-      doc = {"_id" => key, "type" => "test", "a" => ["b" => Date.parse("2010-11-09")]}
+      doc = {"_id" => key, "type" => "test", "a" => ["b" => Time.parse("2010-11-09")]}
       @repo.put doc
       doc = @repo.get 'test', key
-      doc["a"][0]["b"].to_s.should == "2010-11-09"
+      doc["a"][0]["b"].to_s.should == Time.parse("2010-11-09").utc.to_s
     end
 
     it "can store large floating point numbers accurately" do
@@ -106,6 +106,22 @@ describe Ruote::MongoDbStorage do
       @repo.purge_type! "test2"
       @repo.get('test', key1)["name"].should == "ralph"
       @repo.get('test2', key2).should be_nil
+    end
+
+    describe "schedules" do
+      before :each do
+        t1 = Time.parse("1976-08-04")
+        t2 = Time.parse("1976-08-07")
+
+        @repo.put_schedule "f","f", t1, "m1"
+        @repo.put_schedule "f2", "f2", t2, "m2"
+      end
+
+      it "should only get schedules that are due" do
+        schedules = @repo.get_schedules(1, Time.parse("1976-08-5"))
+        schedules.length.should == 1
+        schedules[0]["msg"].should == "m1"
+      end
     end
 
     describe "can get multiple documents" do
@@ -169,6 +185,8 @@ describe Ruote::MongoDbStorage do
       it "count" do
         @repo.get_many("test", nil, {:count => true}).should == 3
       end
+
+      
     end
   end
 end

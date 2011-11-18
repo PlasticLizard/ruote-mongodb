@@ -4,37 +4,17 @@ module Ruote
   class MongoDbStorage
     include Ruote::StorageBase
 
-    @@collection_prefix = "ruote_"
-    @@encoded_dollar_sign = "~#~"
+    COLLECTION_PREFIX = "ruote_"
 
-    def initialize(options={})
-      super()
-      db_config = {"host"=>"localhost", "port"=>27017, "database"=>"Ruote"}
-      options = options.dup
-      if environment = options.delete(:environment)
-        all_db_config=
-          File.open(options.delete(:config) || 'config/database.yml','r') do |f|
-            YAML.load(f)
-          end
+    attr_reader :mongo
 
-        raise "no configuration for environment: #{environment}" unless env_config = all_db_config[environment.to_s]
-        db_config.merge!(env_config)
-      end
-      #args take precedent over config
-      db_config.merge! options.delete(:connection) if options[:connection]
-
-      @db = Mongo::Connection.new(db_config['host'], db_config['port']).
-	db(db_config['database'])
-      if db_config['username'] && db_config['password']
-        @db.authenticate(db_config['username'], db_config['password'])
-      end
-
+    def initialize(mongo, options = {})
+      @mongo = mongo
       replace_engine_configuration(options)
     end
 
-
     def close_connection()
-      @db.connection.close()
+      @mongo.connection.close()
     end
 
     def get_schedules(delta, now)
@@ -67,11 +47,12 @@ module Ruote
       key = key_for(doc)
       rev = doc['_rev']
       type = doc['type']
+      collection = opts.delete(:collection) || get_collection(type)
 
 
       lock(key, force) do
-        
-        current_doc = get(type, key)
+
+        current_doc = get(type, key, collection)
         current_rev = current_doc ? current_doc['_rev'] : nil
 
         if current_rev && rev != current_rev
@@ -81,7 +62,7 @@ module Ruote
         else
           nrev = (rev.to_i + 1).to_s
           encoded = to_mongo(doc.merge('_rev' => nrev), with)
-          get_collection(type).save(encoded)
+          collection.save(encoded)
           doc['_rev'] = nrev if opts[:update_rev]
           nil
         end
@@ -89,8 +70,9 @@ module Ruote
     end
      
 
-    def get(type, key)
-      doc = get_collection(type).find_one("_id" => key)
+    def get(type, key, collection = nil)
+      collection ||= get_collection(type)
+      doc = collection.find_one("_id" => key)
       from_mongo doc if doc
     end
 
@@ -101,17 +83,18 @@ module Ruote
       rev = doc['_rev']
       type = doc['type']
       key = key_for(doc)
+      collection = get_collection(type)
 
       raise ArgumentError.new("can't delete doc without _rev: #{doc.inspect}") unless rev
 
       lock(key, force) do
-        current_doc = get(type, key)
+        current_doc = get(type, key, collection)
         if current_doc.nil?
           true
         elsif current_doc['_rev'] != rev
           current_doc
         else
-          get_collection(type).remove("_id" => key)
+          collection.remove("_id" => key)
           nil
         end
       end
@@ -149,8 +132,8 @@ module Ruote
     end
 
     def purge!
-      @db.collection_names.each do |name| 
-        @db.drop_collection(name) if name =~ /^#{@@collection_prefix}/
+      @mongo.database.collection_names.each do |name| 
+        @mongo.database.drop_collection(name) if name =~ /^#{MongoDbStorage::COLLECTION_PREFIX}/
       end
     end
 
@@ -159,7 +142,7 @@ module Ruote
     end
 
     def purge_type!(type)
-      @db.drop_collection(@@collection_prefix + type)
+      @mongo.database.drop_collection(MongoDbStorage::COLLECTION_PREFIX + type)
     end
 
     def close
@@ -184,39 +167,54 @@ module Ruote
       doc['_id']
     end
 
-    def lock(key, force = false)
-     collection = get_collection("locks")
+    def lock(key, force = false, &block)
+      collection = get_collection("locks")
+      result = nil
+
+      unless force || try_lock(key, collection)
+        wait_for_lock(key, block, collection)
+      end
+
       begin
-        have_lock = false
-        until have_lock do
-          collection.remove({"_id" => key, "time" => {"$lte" => Time.now.utc - 60}})
-            #expire lock if appropriate
-          
-          lock = collection.find_and_modify({
-            :query  => {"_id" => key },
-            :update => {"_id" => key },
-            :upsert => true
-          })
-
-          unless lock && lock["_id"]
-            #locking succesful. We need to timestamp it so it can expire 
-            #if we don't finish with it in a reasonable time period
-            collection.update({"_id" => key}, { "time" => Time.now.utc })
-            have_lock = true
-          end
-          
-        end unless force
-
         result = yield
-
-        result
       ensure
-        collection.remove({"_id" => key})
+        #better release the lock, come rain or shine
+        collection.remove({"key" => key})
+      end
+      result      
+    end
+
+    def try_lock(key, collection = nil)
+      collection ||= get_collection("locks")
+      collection.remove({"key" => key, "time" => {"$lte" => Time.now.utc - 60}})
+        #expire lock if appropriate
+      
+      lock = collection.find_and_modify({
+        :query  => {"key" => key },
+        :update => {"$set" => {"key" => key }, "$inc" => {"requests" => 1 } },
+        :upsert => true
+      })
+      if lock.nil? || lock.empty?
+        #locking succesful. We need to timestamp it so it can expire 
+        #if we don't finish with it in a reasonable time period
+        collection.update({"key" => key}, { "$set" => {"time" => Time.now.utc }})
+        true
+      else
+        false
       end
     end
 
+    #We're putting the blocking wait into a separate method
+    #so that the event machine version can do its own thing
+    def wait_for_lock(key, block, collection = nil)
+      loop do 
+        sleep 0.01
+      end until try_lock(key, collection)
+      lock(key, true, &block)
+    end
+
     def get_collection(type)
-      @db[@@collection_prefix + type]
+      mongo.collection(MongoDbStorage::COLLECTION_PREFIX + type)
     end
 
     def from_mongo(doc)
@@ -235,12 +233,15 @@ module Ruote
 
       return if opts['preserve_configuration']
 
-      conf = get('configurations', 'engine')
+      type = 'configurations'
+      collection = get_collection(type)      
 
-      doc = opts.merge('type' => 'configurations', '_id' => 'engine')
+      conf = get(type, 'engine', collection)
+
+      doc = opts.merge('type' => type, '_id' => 'engine')
       doc['_rev'] = conf['_rev'] if conf
 
-      put(doc)
+      put(doc, :collection => collection)
     end
 
   end

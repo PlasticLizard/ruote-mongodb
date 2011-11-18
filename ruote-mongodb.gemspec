@@ -9,15 +9,12 @@ Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.files = Dir.glob("{lib,test,spec}/**/*") + %w[LICENSE README]
 
-  s.add_dependency 'mongo', '~> 1.4.0'
-  s.add_dependency 'bson', '~> 1.4.0'
-  s.add_dependency 'bson_ext', '~> 1.4.0'
   s.add_dependency 'ruote'
   s.add_dependency 'yajl-ruby'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'test-unit'
-  s.add_development_dependency 'yajl-ruby'
+
 
 end
 

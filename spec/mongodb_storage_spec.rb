@@ -1,65 +1,14 @@
 require 'ruote-mongodb'
+require 'ruote-mongodb/mongo'
 require 'date'
 
 describe Ruote::MongoDbStorage do
-  describe "options" do
-    after :each do
-      File.delete("config/database.yml") if File.exist?("config/database.yml")
-    end
-
-    it "uses sensible defaults if no DB configuration specified" do
-      lambda {
-        Ruote::MongoDbStorage.new
-      }.should_not raise_error
-    end
-
-    it "fails if invalid server passed in on constructor" do
-      lambda {
-        Ruote::MongoDbStorage.new :connection=>{"host"=>"doesntexist"}
-      }.should raise_error Mongo::ConnectionFailure
-    end
-
-    it "fails if an environment is passed in but database.yml doesn't exist" do
-      lambda {
-        Ruote::MongoDbStorage.new :environment=>"test"
-      }.should raise_error "No such file or directory - config/database.yml"
-      #TODO: consider a better error message for this case
-    end
-
-    it "works when database.yml specifies valid settings for the environment" do
-      File.open("config/database.yml", "w") do |f|
-        f.puts "test:"
-        f.puts "    host: localhost"
-      end
-      lambda {
-        Ruote::MongoDbStorage.new :environment=>"test"
-      }.should_not raise_error
-    end
-
-    it "fails when environment doesn't exist in database.yml" do
-      File.open("config/database.yml", "w") do |f|
-        f.puts "test:"
-        f.puts "    host: localhost"
-      end
-      lambda {
-        Ruote::MongoDbStorage.new :environment=>"development"
-      }.should raise_error "no configuration for environment: development"
-    end
-
-    it "fails when invalid server in database.yml" do
-      File.open("config/database.yml", "w") do |f|
-        f.puts "test:"
-        f.puts "    host: doesntexist"
-      end
-      lambda {
-        Ruote::MongoDbStorage.new :environment=>"test"
-      }.should raise_error Mongo::ConnectionFailure
-    end
-  end
 
   describe "provider" do
     before :each do
-      @repo = Ruote::MongoDbStorage.new
+      @repo = Ruote::MongoDbStorage.new(
+        Ruote::Mongo.connect()
+      )
       @repo.purge!
     end
 
@@ -97,7 +46,7 @@ describe Ruote::MongoDbStorage do
 
     it "can store documents with dates" do
       key = BSON::ObjectId.new.to_s
-      doc = {"_id" => key, "type" => "test", "a" => ["b" => Date.parse("11/9/2010")]}
+      doc = {"_id" => key, "type" => "test", "a" => ["b" => Date.parse("2010-11-09")]}
       @repo.put doc
       doc = @repo.get 'test', key
       doc["a"][0]["b"].to_s.should == "2010-11-09"
@@ -139,7 +88,7 @@ describe Ruote::MongoDbStorage do
     end
 
     it "only purges collections starting with the ruote_ prefix" do
-      db = @repo.instance_eval "@db"
+      db = @repo.mongo.database
       db.drop_collection("something_else")
       @repo.put({"_id" => BSON::ObjectId.new.to_s, "name" => "ralph", "type" => "test"})
       @repo.put({"_id" => BSON::ObjectId.new.to_s, "name" => "bill", "type" => "test2"})

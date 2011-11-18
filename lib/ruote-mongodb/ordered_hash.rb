@@ -1,7 +1,7 @@
 #ruote functional tests rely on inspecting Ruby hashes, so 
 #our BSON hashes need to inspect as the same so the tests pass.
 module BSON
-  class OrderedHash
+  class OrderedHash < Hash
     def inspect
       "{#{entries.map{|e|"#{e[0].inspect}=>#{e[1].inspect}"}.join(",")}}"
     end

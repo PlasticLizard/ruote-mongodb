@@ -53,9 +53,6 @@ module Ruote
 
       collection = get_collection(doc['type'])
 
-      collection.save(to_mongo(doc), :safe => true)
-      nil
-
       r = begin
         collection.update(
           {
@@ -66,7 +63,7 @@ module Ruote
           :safe => true,
           :upsert => original['_rev'].nil?
         )
-      rescue
+      rescue Exception
         false
       end
 

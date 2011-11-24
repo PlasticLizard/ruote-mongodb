@@ -45,8 +45,8 @@ module Ruote
         collection(t).ensure_index('_wfid')
         collection(t).ensure_index([ [ '_id', 1 ], [ '_rev', 1 ] ])
       end
-      collection('schedules').ensure_index('_wfid')
       collection("schedules").ensure_index("at")
+      collection("expressions").ensure_index("fei.wfid")
     end  
 
     protected

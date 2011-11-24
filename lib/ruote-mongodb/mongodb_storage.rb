@@ -34,7 +34,7 @@ module Ruote
 
       return nil unless doc
 
-      r = put(doc, :with => {:at => doc["at"]})
+      r = put(doc)
 
       raise "put_schedule failed" if r != nil
 
@@ -44,11 +44,15 @@ module Ruote
 
       
     def put(doc, opts={})
+      if opts[:force]
+        get_collection(doc['type']).save(doc, :safe => true)
+        return nil
+      end
+
       original = doc
       doc = doc.dup
 
       doc['_rev'] = (doc['_rev'].to_i || -1) + 1
-      doc['_wfid'] = doc['_id'].split('!').last
       doc['put_at'] = Ruote.now_to_utc_s
 
       collection = get_collection(doc['type'])
@@ -87,6 +91,11 @@ module Ruote
 
     def delete(doc, opts = {})
 
+      if opts[:force]
+        get_collection(doc['type']).remove({'_id' => doc['_id']}, :safe => true)
+        return nil
+      end
+
       rev = doc['_rev']
 
       raise ArgumentError.new("can't delete doc without _rev") unless rev
@@ -105,6 +114,11 @@ module Ruote
 
     end
 
+    def find_root_expression(wfid)
+      root = get_collection("expressions").find_one("fei.wfid" => wfid, "parent_id" => nil)
+      from_mongo(root) if root
+    end
+
     def get_many(type, key=nil, opts={})
       opts = Ruote.keys_to_s(opts)
       keys = key ? Array(key) : nil
@@ -115,7 +129,7 @@ module Ruote
       elsif keys.first.is_a?(Regexp)
         collection.find('_id' => { '$in' => keys })
       else # a String
-        collection.find('_wfid' => { '$in' => keys })
+        collection.find('fei.wfid' => { '$in' => keys })
       end
 
       return cursor.count if opts['count']

@@ -41,9 +41,12 @@ module Ruote
     end    
 
     def ensure_indexes
-      collection("locks").create_index("key")
-      collection("locks").create_index([["key",1],["time",1]])
-      collection("schedules").create_index([["at",1]])
+      (::Ruote::MongoDbStorage::TYPES - %w[ msgs schedules ]).each do |t|
+        collection(t).ensure_index('_wfid')
+        collection(t).ensure_index([ [ '_id', 1 ], [ '_rev', 1 ] ])
+      end
+      collection('schedules').ensure_index('_wfid')
+      collection("schedules").ensure_index("at")
     end  
 
     protected

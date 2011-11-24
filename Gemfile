@@ -3,6 +3,8 @@ source 'http://rubygems.org'
 
 gemspec
 
+gem "ruote", "2.2.1", :git=>'https://github.com/jmettraux/ruote.git'
+
 gem "bson", ">= 1.2.0"
 gem "bson_ext", ">= 1.2.0"
 

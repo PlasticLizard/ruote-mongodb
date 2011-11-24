@@ -1,9 +1,6 @@
 module Ruote
   class MongoDbStorage
-  	def from_mongo(doc)
-
-  	end
-
+  	
   	def from_mongo(doc)
   		encoded_dollar_sign = "~#~"
       mongo_encode(doc, /^#{encoded_dollar_sign}/, "$", :backward)

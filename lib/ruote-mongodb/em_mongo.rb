@@ -1,5 +1,4 @@
 require "ruote-mongodb/mongo_common"
-require "ruote-mongodb/em_mongodb_storage"
 
 begin
   require "em-mongo"

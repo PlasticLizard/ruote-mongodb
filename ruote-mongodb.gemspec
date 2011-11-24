@@ -5,11 +5,11 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.authors = ['Patrick Gannon', 'Nathan Stults']
   s.email = ['hereiam@sonic.net']
-  s.version = '0.1.0'
+  s.version = '0.2.0'
   s.platform = Gem::Platform::RUBY
   s.files = Dir.glob("{lib,test,spec}/**/*") + %w[LICENSE README]
 
-  s.add_dependency 'ruote'
+  s.add_dependency 'ruote', '>= 2.2.1'
   s.add_dependency 'yajl-ruby'
 
   s.add_development_dependency 'rspec'

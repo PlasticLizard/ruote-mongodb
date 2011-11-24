@@ -87,6 +87,7 @@ module Ruote
 
     def delete(doc, opts = {})
 
+      rev = doc['_rev']
 
       raise ArgumentError.new("can't delete doc without _rev") unless rev
 
@@ -142,7 +143,10 @@ module Ruote
     end
 
     def purge_type!(type)
-      @mongo.database.drop_collection(MongoDbStorage::COLLECTION_PREFIX + type)
+      begin
+        @mongo.database.drop_collection(MongoDbStorage::COLLECTION_PREFIX + type)
+      rescue
+      end
     end
 
     def close

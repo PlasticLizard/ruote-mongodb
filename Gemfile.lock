@@ -22,7 +22,7 @@ GIT
 PATH
   remote: .
   specs:
-    ruote-mongodb (0.1.0)
+    ruote-mongodb (0.2.0)
       ruote (>= 2.2.1)
       yajl-ruby
 

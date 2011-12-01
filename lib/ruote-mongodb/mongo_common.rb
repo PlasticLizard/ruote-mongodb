@@ -22,7 +22,7 @@ module Ruote
     def collection(collection_name)
       db = database
       raise "No database specified" unless db
-      collection_name ? db.collection(MongoDbStorage::COLLECTION_PREFIX + collection_name) : nil
+      collection_name ? db.collection(Ruote::MongoCommon::COLLECTION_PREFIX + collection_name) : nil
     end
 
     def connect(options={})

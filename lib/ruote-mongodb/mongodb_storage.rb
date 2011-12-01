@@ -4,7 +4,6 @@ module Ruote
   class MongoDbStorage
     include Ruote::StorageBase
 
-    COLLECTION_PREFIX = "ruote_"
     TYPES = %w[
       msgs schedules expressions workitems errors
       configurations variables trackers history locks
@@ -194,7 +193,7 @@ module Ruote
     protected
   
     def get_collection(type)
-      mongo.collection(MongoDbStorage::COLLECTION_PREFIX + type)
+      mongo.collection(type)
     end
 
     def from_mongo(doc)

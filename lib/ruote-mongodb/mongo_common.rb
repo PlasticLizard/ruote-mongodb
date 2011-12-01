@@ -1,5 +1,7 @@
 module Ruote
   module MongoCommon
+ 
+    COLLECTION_PREFIX = "ruote_"
     
     attr_reader :connection, :database_name
     attr_accessor :safe
@@ -20,7 +22,7 @@ module Ruote
     def collection(collection_name)
       db = database
       raise "No database specified" unless db
-      collection_name ? db.collection(collection_name) : nil
+      collection_name ? db.collection(MongoDbStorage::COLLECTION_PREFIX + collection_name) : nil
     end
 
     def connect(options={})

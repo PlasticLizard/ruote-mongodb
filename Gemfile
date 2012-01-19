@@ -1,3 +1,5 @@
+#!/usr/bin/ruby
+
 require 'rubygems'
 source 'http://rubygems.org'
 

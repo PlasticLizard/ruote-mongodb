@@ -32,10 +32,15 @@ module Ruote
       username = options.delete(:username)
       password = options.delete(:password)
       database_name = options.delete(:database) || 'Ruote'
-      
-      @connection = create_connection(host, port, options)
-      self.database_name = database_name
 
+      hosts = options.delete(:hosts)
+      unless hosts
+        @connection = create_connection(host, port, options)
+      else
+        @connection = create_repl_set_connection(hosts, options)
+      end
+
+      self.database_name = database_name
       if username && password && database
         authenticate_database(username, password)
       end   
@@ -60,6 +65,9 @@ module Ruote
     def create_connection(host, port, options)
       raise "Create Connection must be implmeneted by a subclass"
     end   
-        
+
+    def create_repl_set_connection(hosts, options)
+      raise "create_repl_set_connection must be implmeneted by a subclass"
+    end         
   end
 end

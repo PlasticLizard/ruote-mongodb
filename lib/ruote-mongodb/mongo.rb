@@ -23,6 +23,10 @@ module Ruote
       ::Mongo::Connection.new(host, port, options)
     end     
 
+    def create_repl_set_connection(hosts, options = {})
+      ::Mongo::ReplSetConnection.new(*hosts.push(options))
+    end
+
   end
 end
 

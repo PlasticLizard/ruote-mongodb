@@ -5,7 +5,8 @@ source 'http://rubygems.org'
 
 gemspec
 
-gem "ruote", "2.2.1", :git=>'https://github.com/jmettraux/ruote.git'
+# The current ruote version (as of 2012/09/14) available in RubyGems is 2.3.0.1
+gem "ruote", "~>2.3.0"
 
 gem "bson", ">= 1.2.0"
 gem "bson_ext", ">= 1.2.0"

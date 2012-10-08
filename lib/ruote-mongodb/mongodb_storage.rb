@@ -41,7 +41,7 @@ module Ruote
 
     end
 
-      
+
     def put(doc, opts={})
       if opts[:force]
         get_collection(doc['type']).save(doc, :safe => true)
@@ -66,7 +66,7 @@ module Ruote
           :safe => true,
           :upsert => original['_rev'].nil?
         )
-      rescue Exception
+      rescue Exception => ex
         false
       end
 
@@ -79,7 +79,7 @@ module Ruote
         collection.find_one('_id' => doc['_id']) || true
       end
     end
-     
+
 
     def get(type, key, collection = nil)
       collection ||= get_collection(type)
@@ -178,7 +178,7 @@ module Ruote
 
     def if_lock(key)
       collection = get_collection("locks")
-      unless collection.find_and_modify(:query => {"_id" => key}, :update => {"_id" => key}) 
+      unless collection.find_and_modify(:query => {"_id" => key}, :update => {"_id" => key})
         begin
           yield
           return true
@@ -191,7 +191,7 @@ module Ruote
 
 
     protected
-  
+
     def get_collection(type)
       mongo.collection(type)
     end
@@ -202,8 +202,9 @@ module Ruote
 
     def to_mongo(doc, with = {})
       doc.merge(with).merge!("put_at" => Ruote.now_to_utc_s)
+      mongo_encode_key(doc)
+      doc
     end
-    
   end
 end
 

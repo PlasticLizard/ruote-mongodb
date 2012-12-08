@@ -34,7 +34,7 @@ module Ruote
     end
 
     # To be called on doc to be saved back to mongodb to ensure that keys don't start with $ and does not contain . characters
-    def mongo_encode_key(doc)
+    def mongo_encode(doc)
       if doc.is_a?(Hash)
         doc.keys.each do |key|
           new_key = key
@@ -42,17 +42,17 @@ module Ruote
           if key.is_a?(String)
             new_key = encode_key(new_key)
             if new_key != key
-              # puts "============= Ruote::MongoDbStorage#mongo_encode_key - Replace key from #{key} to #{new_key}"
+              # puts "============= Ruote::MongoDbStorage#mongo_encode - Replace key from #{key} to #{new_key}"
               doc[new_key] = value
               doc.delete key
             end
           end
-          mongo_encode_key(value)
+          mongo_encode(value)
           doc[new_key] = value.to_s if value.is_a? Symbol
         end
       elsif doc.is_a? Array
         doc.each_with_index do |entry, i|
-          mongo_encode_key(entry)
+          mongo_encode(entry)
           doc[i] = entry.to_s if entry.is_a? Symbol
         end
       end

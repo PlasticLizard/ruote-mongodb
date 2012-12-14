@@ -9,7 +9,6 @@ module Ruote
       configurations variables trackers history locks
     ]
 
-
     attr_reader :mongo
 
     def initialize(mongo, options = {})
@@ -222,17 +221,15 @@ module Ruote
             end
           end
           mongo_decode(value, date_conv)
-          ensure_date_encoding(value, doc, new_key, date_conv)
+          ensure_date_decoding(value, doc, new_key, date_conv)
           doc[new_key] = value.to_s if value.is_a? Symbol
         end
       elsif doc.is_a? Array
         doc.each_with_index do |entry, i|
           mongo_decode(entry, date_conv)
-          ensure_date_encoding(entry, doc, i, date_conv)
+          ensure_date_decoding(entry, doc, i, date_conv)
           doc[i] = entry.to_s if entry.is_a? Symbol
         end
-      else
-        # puts "++++++++++++++ Ruote::MongoDbStorage#mongo_decode - doc: #{doc.inspect}"
       end
     end
 
@@ -258,8 +255,6 @@ module Ruote
           mongo_encode(entry)
           doc[i] = entry.to_s if entry.is_a? Symbol
         end
-      else
-        # puts "-------------- Ruote::MongoDbStorage#mongo_encode - doc: #{doc.inspect}"
       end
     end
 
@@ -270,12 +265,12 @@ module Ruote
     end
 
     def decode_key(key)
-      key = key.gsub("~_~",".") if key =~ /\./
+      key = key.gsub("~_~",".") if key =~ /~_~/
       key = key.sub("~#~","$") if key =~ /^~#~/
       key
     end
 
-    def ensure_date_encoding(value, doc, key, date_conv)
+    def ensure_date_decoding(value, doc, key, date_conv)
       if value.is_a?(Date) && date_conv == :forward
         doc[key] = "DT_" + value.to_s
       end
@@ -285,5 +280,3 @@ module Ruote
     end
   end
 end
-
-# require "ruote-mongodb/legacy"

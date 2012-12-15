@@ -78,12 +78,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bson (>= 1.7.0)
-  bson_ext (>= 1.7.0)
+  bson (~> 1.7.0)
+  bson_ext (~> 1.7.0)
   em-mongo
   em-synchrony!
   eventmachine (>= 1.0.0.beta.3)
-  mongo (>= 1.7.0)
+  mongo (~> 1.7.0)
   rspec
   ruote (~> 2.3.0)
   ruote-mongodb!

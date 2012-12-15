@@ -196,14 +196,16 @@ module Ruote
     end
 
     def from_mongo(doc)
-      mongo_decode(doc, :backward)
-      doc
+      rekey(doc) { |k| k.gsub(/^~#~/, '$').gsub(/~_~/, '.') }
+      # mongo_decode(doc, :backward)
+      # doc
     end
 
     def to_mongo(doc, with = {})
       doc.merge(with).merge!("put_at" => Ruote.now_to_utc_s)
-      mongo_encode(doc)
-      doc
+      rekey(doc) { |k| k.to_s.gsub(/^\$/, '~#~').gsub(/\./, '~_~') }
+      # mongo_encode(doc)
+      # doc
     end
 
      # called by from_mongo and to_mongo
@@ -276,6 +278,15 @@ module Ruote
       end
       if value.is_a?(String) && value[0,3] == "DT_" && date_conv == :backward
         doc[key] = Date.parse(value[3..-1])
+      end
+    end
+
+    def rekey(o, &block)
+      case o
+        when Hash; o.remap { |(k, v), h| h[block.call(k)] = rekey(v, &block) }
+        when Array; o.collect { |e| rekey(e, &block) }
+        when Symbol; o.to_s
+        else o
       end
     end
   end

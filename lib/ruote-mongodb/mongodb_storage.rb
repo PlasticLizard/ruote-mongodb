@@ -148,7 +148,7 @@ module Ruote
     end
 
     def purge!
-      TYPES.each { |t| get_collection(MongoDbStorage::COLLECTION_PREFIX + t).remove }
+      TYPES.each { |t| get_collection(t).remove }
     end
 
     def add_type(type)
@@ -156,7 +156,7 @@ module Ruote
 
     def purge_type!(type)
       begin
-        @mongo.database.drop_collection(MongoDbStorage::COLLECTION_PREFIX + type)
+        @mongo.database.drop_collection(Ruote::MongoCommon::COLLECTION_PREFIX + type)
       rescue
       end
     end
@@ -192,7 +192,8 @@ module Ruote
     protected
 
     def get_collection(type)
-      mongo.collection(type)
+      type_with_prefix = Ruote::MongoCommon::COLLECTION_PREFIX + type
+      mongo.collection(type_with_prefix)
     end
 
     def from_mongo(doc)

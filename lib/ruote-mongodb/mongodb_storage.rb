@@ -203,21 +203,6 @@ module Ruote
       rekey(doc) { |k| k.to_s.gsub(/^\$/, '~#~').gsub(/\./, '~_~') }
     end
 
-    def decode_key(key)
-      key = key.gsub("~_~",".") if key =~ /~_~/
-      key = key.sub("~#~","$") if key =~ /^~#~/
-      key
-    end
-
-    def ensure_date_decoding(value, doc, key, date_conv)
-      if value.is_a?(Date) && date_conv == :forward
-        doc[key] = "DT_" + value.to_s
-      end
-      if value.is_a?(String) && value[0,3] == "DT_" && date_conv == :backward
-        doc[key] = Date.parse(value[3..-1])
-      end
-    end
-
     def rekey(o, &block)
       case o
         when Hash; o.remap { |(k, v), h| h[block.call(k)] = rekey(v, &block) }

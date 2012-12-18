@@ -9,7 +9,6 @@ module Ruote
       configurations variables trackers history locks
     ]
 
-
     attr_reader :mongo
 
     def initialize(mongo, options = {})
@@ -41,7 +40,7 @@ module Ruote
 
     end
 
-      
+
     def put(doc, opts={})
       if opts[:force]
         get_collection(doc['type']).save(doc, :safe => true)
@@ -66,7 +65,7 @@ module Ruote
           :safe => true,
           :upsert => original['_rev'].nil?
         )
-      rescue Exception
+      rescue Exception => ex
         false
       end
 
@@ -79,7 +78,7 @@ module Ruote
         collection.find_one('_id' => doc['_id']) || true
       end
     end
-     
+
 
     def get(type, key, collection = nil)
       collection ||= get_collection(type)
@@ -157,7 +156,7 @@ module Ruote
 
     def purge_type!(type)
       begin
-        @mongo.database.drop_collection(MongoDbStorage::COLLECTION_PREFIX + type)
+        @mongo.database.drop_collection(Ruote::MongoCommon::COLLECTION_PREFIX + type)
       rescue
       end
     end
@@ -178,7 +177,7 @@ module Ruote
 
     def if_lock(key)
       collection = get_collection("locks")
-      unless collection.find_and_modify(:query => {"_id" => key}, :update => {"_id" => key}) 
+      unless collection.find_and_modify(:query => {"_id" => key}, :update => {"_id" => key})
         begin
           yield
           return true
@@ -189,22 +188,28 @@ module Ruote
       false
     end
 
-
     protected
-  
+
     def get_collection(type)
       mongo.collection(type)
     end
 
     def from_mongo(doc)
-      doc
+      rekey(doc) { |k| k.gsub(/^~#~/, '$').gsub(/~_~/, '.') }
     end
 
     def to_mongo(doc, with = {})
       doc.merge(with).merge!("put_at" => Ruote.now_to_utc_s)
+      rekey(doc) { |k| k.to_s.gsub(/^\$/, '~#~').gsub(/\./, '~_~') }
     end
-    
+
+    def rekey(o, &block)
+      case o
+        when Hash; o.remap { |(k, v), h| h[block.call(k)] = rekey(v, &block) }
+        when Array; o.collect { |e| rekey(e, &block) }
+        when Symbol; o.to_s
+        else o
+      end
+    end
   end
 end
-
-require "ruote-mongodb/legacy"

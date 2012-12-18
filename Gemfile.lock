@@ -16,8 +16,9 @@ GEM
   remote: http://rubygems.org/
   specs:
     blankslate (2.1.2.4)
-    bson (1.4.0)
-    bson_ext (1.4.0)
+    bson (1.7.1)
+    bson_ext (1.7.1)
+      bson (~> 1.7.1)
     diff-lcs (1.1.3)
     em-mongo (0.4.1)
       bson (>= 1.1.3)
@@ -26,8 +27,8 @@ GEM
     eventmachine (1.0.0.beta.4)
     file-tail (1.0.11)
       tins (~> 0.5.0)
-    mongo (1.4.0)
-      bson (= 1.4.0)
+    mongo (1.7.1)
+      bson (~> 1.7.1)
     parslet (1.4.0)
       blankslate (~> 2.0)
     rspec (2.7.0)
@@ -77,12 +78,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bson (>= 1.2.0)
-  bson_ext (>= 1.2.0)
+  bson (= 1.7.1)
+  bson_ext (= 1.7.1)
   em-mongo
   em-synchrony!
   eventmachine (>= 1.0.0.beta.3)
-  mongo (>= 1.2.0)
+  mongo (= 1.7.1)
   rspec
   ruote (~> 2.3.0)
   ruote-mongodb!
